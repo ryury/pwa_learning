@@ -72,5 +72,97 @@ document.addEventListener("DOMContentLoaded", (e) => {
         const apiurl = "http://crong.codesquad.kr:8080/wonder/rocker";
         getAdditionalData(apiurl)
     });
-})
+});
+
+//PUSH NOTIFICATION
+  
+(function() {
+    function urlB64ToUint8Array(base64String) {
+        var padding = '='.repeat((4 - base64String.length % 4) % 4);
+        var base64 = (base64String + padding)
+          .replace(/\-/g, '+')
+          .replace(/_/g, '/');
+   
+        var rawData = window.atob(base64);
+        var outputArray = new Uint8Array(rawData.length);
+    
+        for (var i = 0; i < rawData.length; ++i) {
+          outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    }
+
+    //Notification feature detection
+    if (!('Notification' in window)) {
+        console.log('This browser does not support notifications!');
+        return;
+    }
+
+    Notification.requestPermission(function (status) {
+        console.log('Notification permission status:', status);
+    });
+
+    function displayNotification() {
+        if (Notification.permission !== 'granted') return;
+        navigator.serviceWorker.getRegistration().then(function (reg) {
+            var options = {
+                body: 'First notification!',
+                vibrate: [100, 50, 100],
+                data: {
+                    dateOfArrival: Date.now(),
+                    primaryKey: 1
+                },
+            };
+            reg.showNotification('Hello world!', options);
+        });
+    }
+
+    function subscribeUser(swRegistration) {
+        //UInt8Array로 변환
+        const applicationServerKey = urlB64ToUint8Array("BEZMmtd6T_CIxUQqUGW9zOGPb2uLYE2QPAB8qtdpHWipv4HaB0hEp0ydOyGDlT6m3AGlQgTTuXNI_8Z8GiPUv3Y");
+  
+        swRegistration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey : applicationServerKey
+        })
+
+        .then(function(subscription) {
+          console.log('User is subscribed:', JSON.stringify(subscription));
+        }).catch(function(err) {
+          if (Notification.permission === 'denied') {
+            console.warn('Permission for notifications was denied');
+          } else {
+            console.error('Failed to subscribe the user: ', err);
+          }
+        });
+    }
+
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+        console.log('Service Worker and Push is supported');
+    
+        navigator.serviceWorker.register('sw.js')
+        .then(function(swRegistration) {
+
+            document.querySelector(".pushBtn").addEventListener("click", (e) => {
+                subscribeUser(swRegistration);
+            });
+
+            swRegistration.pushManager.getSubscription()
+            .then(function(subscription) {
+              if (subscription !== null) {
+                console.log('User IS subscribed.');
+              } else {
+                console.log('User is NOT subscribed.');
+              }
+            });
+        })
+        .catch(function(error) {
+          console.error('Service Worker Error', error);
+        });
+    } else {
+        console.warn('Push messaging is not supported');
+    }
+
+    //displayNotification();
+})();
 

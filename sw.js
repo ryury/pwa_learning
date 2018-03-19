@@ -86,3 +86,25 @@ self.addEventListener('fetch', (e) => {
     }
 });
 
+self.addEventListener("push", (e) => {
+
+    var body = e.data ? e.data.text() : 'Default Body~';
+
+    var options = {
+        body: body,
+        vibrate: [100, 50, 100],
+        data: {
+            dateOfArrival: Date.now(),
+            primaryKey: 1
+        },
+        actions: [
+            {action: 'explore', title: 'Explore this new world'},
+            {action: 'close', title: 'Close notification'}
+        ]
+    };
+
+    e.waitUntil(
+        self.registration.showNotification('Hello world!', options)
+    );
+});
+
